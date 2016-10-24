@@ -1,0 +1,1 @@
+set GOPATH=%GOPATH%;D:\study\go\smart_test

@@ -1,0 +1,570 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"a",
+				"append"
+			],
+			[
+				"ma",
+				"main\tmain"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "cmd/stf-apiserver/apiserver.go",
+			"settings":
+			{
+				"buffer_size": 384,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"contents": "/*\nCopyright 2014 The Kubernetes Authors All rights reserved.\n\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n    http://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n*/\n\npackage runtime\n\nimport (\n\t\"fmt\"\n\t\"github.com/golang/glog\"\n\t\"runtime\"\n)\n\n// For testing, bypass HandleCrash.\nvar ReallyCrash bool\n\n// PanicHandlers is a list of functions which will be invoked when a panic happens.\nvar PanicHandlers = []func(interface{}){logPanic}\n\n//TODO search the public functions\n// HandleCrash simply catches a crash and logs an error. Meant to be called via defer.\n// Additional context-specific handlers can be provided, and will be called in case of panic\nfunc HandleCrash(additionalHandlers ...func(interface{})) {\n\tif ReallyCrash {\n\t\treturn\n\t}\n\tif r := recover(); r != nil {\n\t\tfor _, fn := range PanicHandlers {\n\t\t\tfn(r)\n\t\t}\n\t\tfor _, fn := range additionalHandlers {\n\t\t\tfn(r)\n\t\t}\n\t}\n}\n\n// logPanic logs the caller tree when a panic occurs.\nfunc logPanic(r interface{}) {\n\tcallers := \"\"\n\tfor i := 0; true; i++ {\n\t\t_, file, line, ok := runtime.Caller(i)\n\t\tif !ok {\n\t\t\tbreak\n\t\t}\n\t\tcallers = callers + fmt.Sprintf(\"%v:%v\\n\", file, line)\n\t}\n\tglog.Errorf(\"Recovered from panic: %#v (%v)\\n%v\", r, r, callers)\n}\n\n// ErrorHandlers is a list of functions which will be invoked when an unreturnable\n// error occurs.\nvar ErrorHandlers = []func(error){logError}\n\n// HandlerError is a method to invoke when a non-user facing piece of code cannot\n// return an error and needs to indicate it has been ignored. Invoking this method\n// is preferable to logging the error - the default behavior is to log but the\n// errors may be sent to a remote server for analysis.\nfunc HandleError(err error) {\n\t// this is sometimes called with a nil error.  We probably shouldn't fail and should do nothing instead\n\tif err == nil {\n\t\treturn\n\t}\n\n\tfor _, fn := range ErrorHandlers {\n\t\tfn(err)\n\t}\n}\n\n// logError prints an error with the call stack of the location it was reported\nfunc logError(err error) {\n\tglog.ErrorDepth(2, err)\n}\n\n// GetCaller returns the caller of the function that calls it.\nfunc GetCaller() string {\n\tvar pc [1]uintptr\n\truntime.Callers(3, pc[:])\n\tf := runtime.FuncForPC(pc[0])\n\tif f == nil {\n\t\treturn fmt.Sprintf(\"Unable to find caller\")\n\t}\n\treturn f.Name()\n}\n",
+			"file": "src/pkg/runtime/runtime.go",
+			"file_size": 2762,
+			"file_write_time": 131217522782577103,
+			"settings":
+			{
+				"buffer_size": 2668,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "cmd/stf-apiserver/app/server.go",
+			"settings":
+			{
+				"buffer_size": 1010,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"contents": "package pkg\nimport (\n    \"fmt\"\n    \"net/url\"\n    \"errors\"\n    \"net/http\"\n\n    \n)\ntype Cmd func(r *http.Request,srv *Server) (error,[]byte)\n\nfunc ApiSubHandler(r *http.Request, srv *Server) (error,Cmd){\n    //fmt.Println(\"tset_ApiSubHandler\")\n    queryValues, _ := url.ParseQuery(r.URL.RawQuery)\n    fmt.Println(r.Method,r.URL.Path,queryValues)\n    Path:=r.URL.Path\n    Method:=r.Method\n    \n    if  Path==\"/api/node\"{\n        if Method==\"GET\" {\n            return nil,srv.Apiruntime.NodeManager.GetNodeList\n        }\n        if Method==\"POST\" {\n            return nil,srv.Apiruntime.NodeManager.AddNode///////////\n        }\n    }\n    if  Path==\"/api/node/detail\"{\n        if Method==\"GET\" {\n            return nil,srv.Apiruntime.NodeManager.GetNodeListDetail\n        }\n    }\n    if  Path==\"/api/node/nodeid\"{\n        if Method==\"GET\" {\n            return nil,srv.Apiruntime.NodeManager.GetNode/////////////\n        }\n        if Method==\"PUT\" {\n            return nil,srv.Apiruntime.NodeManager.UpdateNode\n        }\n        if Method==\"DELETE\" {\n            return nil,srv.Apiruntime.NodeManager.RemoveNode\n        }\n    }\n    \n    \n    return errors.New(\"cannot find handle\"),nil\n\n}\n\ntype ApiRuntime struct {\n    Root           string\n    \n    NodeManager    *NodeManager\n\n}\nfunc NewApiRuntime() (*ApiRuntime, error) {\n    fmt.Println(\"NewApiRuntime123\")\n    apiRuntime := &ApiRuntime{\n        Root:           \"root2\",\n        NodeManager:    &NodeManager{\"root1\",nil},\n    }\n    apiRuntime.NodeManager.Init()\n    fmt.Println(apiRuntime.Root)\n    return apiRuntime, nil\n}\n\nfunc NewServer() (*Server, error) {\n\n    apiruntime, err := NewApiRuntime()\n\n    if err != nil {\n        return nil, err\n    }\n    srv := &Server{\n        Apiruntime: apiruntime,\n        \n    }\n    return srv, nil\n}\n\ntype Server struct {\n    Apiruntime *ApiRuntime\n}\n",
+			"file": "src/pkg/api.go",
+			"file_size": 1922,
+			"file_write_time": 131214276376429679,
+			"settings":
+			{
+				"buffer_size": 1840,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"contents": "package pkg\nimport (\n    \"fmt\"\n    //\"net/url\"\n    \"github.com/coreos/etcd/client\"\n    \"golang.org/x/net/context\"\n    \"net/http\"\n    \"github.com/bitly/go-simplejson\"\n    \"io/ioutil\"\n\n)\n\ntype NodeManager struct {\n    Root           string\n    Etcdclient     client.KeysAPI\n\n\n}\nfunc (nm *NodeManager)Init() {\n    nm.Etcdclient=Etcdclient(\"127.0.0.1\",2379)\n    fmt.Println(\"NodeManager init\")\n}\n\nfunc (nm *NodeManager)AddNode(r *http.Request, srv *Server) (error,[]byte) {    \n    defer r.Body.Close()\n    body, _ := ioutil.ReadAll(r.Body)\n    js, _ := simplejson.NewJson(body)\n    nodeName,err := js.Get(\"metadata\").Get(\"name\").String()\n    if err != nil {\n        return err,nil\n    } \n    etcdNodeName:=\"/stf/nodes/\"+nodeName\n    fmt.Println(etcdNodeName)\n    resp, err := nm.Etcdclient.Set(context.Background(), etcdNodeName, string(body), nil)\n    if err != nil {\n        fmt.Println(resp)\n        return err,nil\n    }\n    return nil,[]byte(\"test2222\")\n}\n\nfunc (nm *NodeManager) GetNodeList(r *http.Request, srv *Server) (error,[]byte) {\n    resp, err := nm.Etcdclient.Get(context.Background(), \"/stf/nodes/\", nil)\n    if err != nil {\n        fmt.Printf(\"errr %q\\n\", resp)\n        return nil,nil\n    } else {\n        for _,node:=range  resp.Node.Nodes{\n            fmt.Println(node.Key)\n        }\n        \n    }\n    return nil,[]byte(\"test233333\")\n}\n\n\nfunc (nm *NodeManager) GetNodeListDetail(r *http.Request, srv *Server) (error,[]byte) {\n    return nil,[]byte(\"test5555555552\")\n}\n\nfunc (nm *NodeManager)GetNode(r *http.Request, srv *Server) (error,[]byte) {\n    \n    resp, err := nm.Etcdclient.Get(context.Background(), \"/stf/nodes/\"+\"10.254.177.223\", nil)\n    if err != nil {\n        fmt.Printf(\"errr %q\\n\", resp)\n    } else {\n        // print common key info\n        fmt.Println(resp.Node.Value)\n    }\n    return nil,[]byte(resp.Node.Value)\n}\nfunc (nm *NodeManager)UpdateNode(r *http.Request, srv *Server) (error,[]byte) {\n    return nil,[]byte(\"test333\")\n}\nfunc (nm *NodeManager)RemoveNode(r *http.Request, srv *Server) (error,[]byte) {\n    return nil,[]byte(\"test444\")\n}\n",
+			"file": "src/pkg/node.go",
+			"file_size": 2156,
+			"file_write_time": 131217504092593352,
+			"settings":
+			{
+				"buffer_size": 2079,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "src/pkg/waiter/wait.go",
+			"settings":
+			{
+				"buffer_size": 8183,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "cmd/goenv.sh",
+			"settings":
+			{
+				"buffer_size": 42,
+				"line_ending": "Windows"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 392.0,
+		"last_filter": "Package Control: ",
+		"selected_items":
+		[
+			[
+				"Package Control: ",
+				"Package Control: Install Package"
+			],
+			[
+				"Package Control: pc",
+				"Package Control: List Packages"
+			],
+			[
+				"ssp",
+				"Set Syntax: Python"
+			],
+			[
+				"ss",
+				"Set Syntax: PHP"
+			]
+		],
+		"width": 400.0
+	},
+	"console":
+	{
+		"height": 0.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/D/study/go/smart_test",
+		"/D/study/go/smart_test/cmd",
+		"/D/study/go/smart_test/cmd/stf-apiserver",
+		"/D/study/go/smart_test/cmd/stf-apiserver/app",
+		"/D/study/go/smart_test/cmd/stf-apiserver/app/options",
+		"/D/study/go/smart_test/pkg",
+		"/D/study/go/smart_test/pkg/Runtime",
+		"/D/study/go/smart_test/pkg/Util",
+		"/D/study/go/smart_test/pkg/waiter"
+	],
+	"file_history":
+	[
+		"/D/study/go/smart_test/src/pkg/util/logs.go",
+		"/D/study/go/smart_test/pkg/test.go",
+		"/D/study/go/smart_test/pkg/tt/test1.go",
+		"/D/study/go/smart_test/src/pkg/runtime/runtime.go",
+		"/D/study/go/smart_test/src/pkg/waiter/wait.go",
+		"/D/userdata/yaotliu/Application Data/Sublime Text 3/Packages/User/Package Control.sublime-settings",
+		"/D/study/go/smart_test/src/pkg/etcdclient.go",
+		"/D/study/go/smart_test/src/pkg/api.go",
+		"/D/study/go/smart_test/src/pkg/node.go",
+		"/D/study/go/smart_test/cmd/goenv.sh",
+		"/D/study/go/smart_test/cmd/stf-apiserver/apiserver.go",
+		"/D/study/go/smart_test/cmd/env.sh",
+		"/D/study/go/smart_test/pkg/node.go",
+		"/D/study/go/smart_test/cmd/stf-apiserver/app/options/options.go",
+		"/D/study/go/smart_test/cmd/stf-apiserver/app/apiserver.go",
+		"/D/study/go/smart_test/cmd/stf-apiserver/app/server.go",
+		"/D/study/go/goexample/variadic-functions.go",
+		"/D/study/go/goexample/maps.go",
+		"/D/study/go/goexample/slices.go",
+		"/D/study/go/goexample/arrays.go",
+		"/D/study/go/goexample/switch.go",
+		"/D/study/go_opensource/shadowsocks-go-master/shadowsocks/util.go",
+		"/D/study/go_opensource/shadowsocks-go-master/cmd/shadowsocks-httpget/httpget.go",
+		"/D/study/go_opensource/shadowsocks-go-master/cmd/shadowsocks-server/server.go",
+		"/D/study/go_opensource/shadowsocks-go-master/shadowsocks/encrypt.go",
+		"/D/study/go_opensource/shadowsocks-go-master/shadowsocks/config.go",
+		"/D/study/go_opensource/shadowsocks-go-master/shadowsocks/pipe.go",
+		"/D/study/go_opensource/shadowsocks-go-master/cmd/shadowsocks-local/local.go",
+		"/D/userdata/yaotliu/Desktop/openstack.py",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/pkg/dns/dns_test.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/cmd/kube-apiserver/apiserver.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/cmd/kube-apiserver/app/server.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/pkg/client/cache/reflector.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/pkg/master/master.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/pkg/registry/namespace/etcd/etcd.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/pkg/dns/dns.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/cmd/kube-controller-manager/app/controllermanager.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/cmd/kubelet/kubelet.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/cmd/kube-controller-manager/app/options/options.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/cmd/kubelet/app/options/options.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/pkg/kubelet/client/kubelet_client.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/cmd/kubelet/app/server.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/pkg/kubelet/kubelet.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/cmd/kube-controller-manager/controller-manager.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/pkg/labels/selector.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/vendor/k8s.io/heapster/metrics/apis/metrics/v1alpha1/types.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/pkg/apis/autoscaling/v1/generated.proto",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/pkg/kubelet/pod/manager.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/pkg/util/wait/wait.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/cmd/kubelet/app/server_linux.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/pkg/kubelet/types/pod_update.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/pkg/api/types.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/cmd/libs/go2idl/client-gen/testoutput/clientset_generated/test_internalclientset/clientset.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/pkg/kubelet/cadvisor/cadvisor_linux.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/pkg/kubelet/runonce.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/pkg/kubelet/cm/container_manager_linux.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/cmd/kube-dns/app/server.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/cmd/kube-dns/dns.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/pkg/controller/replication/replication_controller.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/cmd/hyperkube/hyperkube.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/cmd/kubectl/app/kubectl.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/pkg/genericapiserver/default_storage_factory_builder.go",
+		"/D/work/Docker/kubernetes-1.3.0-alpha.5/vendor/google.golang.org/api/cloudmonitoring/v2beta2/cloudmonitoring-gen.go"
+	],
+	"find":
+	{
+		"height": 38.0
+	},
+	"find_in_files":
+	{
+		"height": 102.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"Method string,Path string,queryValues url.Values",
+			"\t",
+			"apiruntime",
+			"NewRuntime",
+			"println",
+			"syncLoopIteration",
+			"initializeModules",
+			"Run",
+			"KubeletBootstrap",
+			"err",
+			"Interface",
+			"podController",
+			"rcController",
+			"Reflector",
+			"func(r *Reflector) Run()",
+			"run",
+			"kubeletClient",
+			"kubeletclient",
+			"BuildDefaultStorageFactory",
+			"NewDefaultResourceEncodingConfig",
+			"ssssdsadasdasdasdasd",
+			"aa"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			"r *http.Request",
+			"    ",
+			"        ",
+			"    ",
+			"Println"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 4,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "cmd/stf-apiserver/apiserver.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 384,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								144,
+								151
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Go/Go.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "src/pkg/runtime/runtime.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2668,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								662,
+								662
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Go/Go.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 132.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "cmd/stf-apiserver/app/server.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1010,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								66,
+								66
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Go/Go.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "src/pkg/api.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1840,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								444,
+								444
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Go/Go.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "src/pkg/node.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2079,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								46,
+								46
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Go/Go.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "src/pkg/waiter/wait.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 8183,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								644,
+								644
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Go/Go.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "cmd/goenv.sh",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 42,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								42
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/ShellScript/Shell-Unix-Generic.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 28.0
+	},
+	"input":
+	{
+		"height": 38.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"project": "smart_test.sublime-project",
+	"replace":
+	{
+		"height": 70.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 500.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"",
+				"D:\\work\\Docker\\docker-0.1.0\\docker-0.1.0.sublime-project"
+			]
+		],
+		"width": 380.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 201.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}
