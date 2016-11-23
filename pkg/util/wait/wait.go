@@ -21,7 +21,7 @@ import (
 	"math/rand"
 	"time"
 
-	"liuyaoting.io/stf/pkg/util/runtime"
+	"github.com/liuliuzi/stf/pkg/util/runtime"
 )
 
 // For any test of the style:

@@ -8,7 +8,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/pflag"
 
-	"liuyaoting.io/stf/pkg/util/wait"
+	"github.com/liuliuzi/stf/pkg/util/wait"
 )
 
 var logFlushFreq = pflag.Duration("log-flush-frequency", 5*time.Second, "Maximum number of seconds between log flushes")

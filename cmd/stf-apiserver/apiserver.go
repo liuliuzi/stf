@@ -9,9 +9,9 @@ import (
 	"github.com/golang/glog"
 	"flag"
 
-	"liuyaoting.io/stf/cmd/stf-apiserver/app"
-	"liuyaoting.io/stf/cmd/stf-apiserver/app/options"
-	"liuyaoting.io/stf/pkg/util"
+	"github.com/liuliuzi/stf/cmd/stf-apiserver/app"
+	"github.com/liuliuzi/stf/cmd/stf-apiserver/app/options"
+	"github.com/liuliuzi/stf/pkg/util"
 
 )	
 
