@@ -1,4 +1,4 @@
-package user
+package node
 import (
 	"net/http"
 	"github.com/emicklei/go-restful"
@@ -9,33 +9,33 @@ import (
 	//"github.com/emicklei/go-restful/swagger"
 )
 
-type UserService struct {
+type NodeService struct {
 	// normally one would use DAO (data access object)
-	Users map[string]User
+	Nodes map[string]Node
 	ApiRuntime   *pkg.ApiRuntime
-	Prefix       string	
+	Prefix       string
 }
-func (u UserService) Init(){
+func (u NodeService) Init(){
 	u.Prefix="/stf/node/"
 	fmt.Println(u.Prefix)
 }	
 
-func (u UserService) Register() {
+func (u NodeService) Register() {
 	ws := new(restful.WebService)
 	ws.
-		Path("/users").
+		Path("/nodes").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON) // you can specify this per route as well
-	ws.Route(ws.GET("/").To(u.findAllUsers))
-	ws.Route(ws.GET("/{user-id}").To(u.findUser)) // on the response
-	ws.Route(ws.PUT("/{user-id}").To(u.updateUser)) // from the request
-	ws.Route(ws.POST("/").To(u.createUser)) // from the request
-	ws.Route(ws.DELETE("/{user-id}").To(u.removeUser))
+	ws.Route(ws.GET("/").To(u.findAllNodes))
+	ws.Route(ws.GET("/{Node-id}").To(u.findNode)) // on the response
+	ws.Route(ws.PUT("/{Node-id}").To(u.updateNode)) // from the request
+	ws.Route(ws.POST("/").To(u.createNode)) // from the request
+	ws.Route(ws.DELETE("/{Node-id}").To(u.removeNode))
 	restful.Add(ws)
 }
 
-func (u UserService) findAllUsers(request *restful.Request, response *restful.Response) {
-	fmt.Println("findAllUsers")
+func (u NodeService) findAllNodes(request *restful.Request, response *restful.Response) {
+	fmt.Println("findAllNodes")
 	value, _ := u.storageGetKey()
 	ret:="["
 	for _, key := range value {
@@ -53,9 +53,9 @@ func (u UserService) findAllUsers(request *restful.Request, response *restful.Re
 }
 
 
-func (u UserService) findUser(request *restful.Request, response *restful.Response) {
-	id := request.PathParameter("user-id")
-	//usr := new(User)
+func (u NodeService) findNode(request *restful.Request, response *restful.Response) {
+	id := request.PathParameter("Node-id")
+	//usr := new(Node)
 	value, err := u.storageGet(id)
 	if err != nil {
 	    fmt.Println(err)
@@ -64,19 +64,19 @@ func (u UserService) findUser(request *restful.Request, response *restful.Respon
 	}
 	
 	if len(value) == 0 {
-		response.WriteErrorString(http.StatusNotFound, "User could not be found.")
+		response.WriteErrorString(http.StatusNotFound, "Node could not be found.")
 	} else {
-		fmt.Println("findUser")
+		fmt.Println("findNode")
 		response.WriteEntity(value)
 	}
 }
 
-func (u *UserService) updateUser(request *restful.Request, response *restful.Response) {
-	usr := new(User)
+func (u *NodeService) updateNode(request *restful.Request, response *restful.Response) {
+	usr := new(Node)
 	err := request.ReadEntity(&usr)
 	if err == nil {
 		u.storageUpdate(usr.Id,usr.String())
-		fmt.Println("updateUser")
+		fmt.Println("updateNode")
 		response.WriteEntity(usr)
 	} else {
 		response.WriteError(http.StatusInternalServerError, err)
@@ -84,9 +84,9 @@ func (u *UserService) updateUser(request *restful.Request, response *restful.Res
 }
 
 
-func (u *UserService) createUser(request *restful.Request, response *restful.Response) {
+func (u *NodeService) createNode(request *restful.Request, response *restful.Response) {
 
-	usr := new(User)
+	usr := new(Node)
 	err := request.ReadEntity(&usr)
 	if err == nil {
 		
@@ -97,13 +97,13 @@ func (u *UserService) createUser(request *restful.Request, response *restful.Res
 	}
 }
 
-func (u *UserService) removeUser(request *restful.Request, response *restful.Response) {
-	id := request.PathParameter("user-id")
+func (u *NodeService) removeNode(request *restful.Request, response *restful.Response) {
+	id := request.PathParameter("Node-id")
 	u.storageDelete(id)
-	fmt.Println("removeUser")
+	fmt.Println("removeNode")
 }
 
-func (u *UserService) storageSet(key string , value string ) error {
+func (u *NodeService) storageSet(key string , value string ) error {
 	resp, err := u.ApiRuntime.Etcdclient.Set(context.Background(), u.Prefix+key, value, nil)
     if err != nil {
     	fmt.Println("storageSet failed")
@@ -115,7 +115,7 @@ func (u *UserService) storageSet(key string , value string ) error {
     return err
 }
 
-func (u *UserService) storageGetKey() ([]string ,error) {
+func (u *NodeService) storageGetKey() ([]string ,error) {
 	resp, err := u.ApiRuntime.Etcdclient.Get(context.Background(), u.Prefix, nil)
     if err != nil {
     	fmt.Println("storageGetKey failed")
@@ -134,7 +134,7 @@ func (u *UserService) storageGetKey() ([]string ,error) {
     }
 }
 
-func (u *UserService) storageGet(key string ) (string ,error) {
+func (u *NodeService) storageGet(key string ) (string ,error) {
 	fmt.Println("storageGet", key)
 	resp, err := u.ApiRuntime.Etcdclient.Get(context.Background(), u.Prefix+key, nil)
     if err != nil {
@@ -146,7 +146,7 @@ func (u *UserService) storageGet(key string ) (string ,error) {
     }
     return resp.Node.Value,err
 }
-func (u *UserService) storageUpdate(key string , value string ) (string ,error) {
+func (u *NodeService) storageUpdate(key string , value string ) (string ,error) {
 	resp, err := u.ApiRuntime.Etcdclient.Update(context.Background(), u.Prefix+key,value)
     if err != nil {
     	fmt.Println("storageUpdate failed")
@@ -157,7 +157,7 @@ func (u *UserService) storageUpdate(key string , value string ) (string ,error) 
     }
     return resp.Node.Value,err
 }
-func (u *UserService) storageDelete(key string ) error {
+func (u *NodeService) storageDelete(key string ) error {
 	resp, err := u.ApiRuntime.Etcdclient.Delete(context.Background(), u.Prefix+key, nil)
     if err != nil {
     	fmt.Println("storageDelete failed")

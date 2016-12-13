@@ -27,7 +27,7 @@ func main() {
 	util.InitLogs()
 	defer util.FlushLogs()
 
-	glog.Info("invalid ==================")
+	glog.Info("invalid app start")
 	
 	if err := app.Run(s); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
