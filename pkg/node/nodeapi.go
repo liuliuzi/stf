@@ -6,6 +6,8 @@ import (
 	"github.com/liuliuzi/stf/pkg"
 	"golang.org/x/net/context"
 	"strings"
+	//"encoding/json"
+	//"github.com/bitly/go-simplejson"
 	//"github.com/emicklei/go-restful/swagger"
 )
 
@@ -15,10 +17,11 @@ type NodeService struct {
 	ApiRuntime   *pkg.ApiRuntime
 	Prefix       string
 }
+
 func (u NodeService) Init(){
 	u.Prefix="/stf/node/"
 	fmt.Println(u.Prefix)
-}	
+}
 
 func (u NodeService) Register() {
 	ws := new(restful.WebService)
@@ -40,7 +43,7 @@ func (u NodeService) findAllNodes(request *restful.Request, response *restful.Re
 	ret:="["
 	for _, key := range value {
             fmt.Println( key)
-            ret=ret+key
+            ret=ret+`"`+key+`":`
             key=strings.Replace(key,u.Prefix,"",20)
             value, _ := u.storageGet(key)
             //fmt.Println (value)
@@ -55,14 +58,13 @@ func (u NodeService) findAllNodes(request *restful.Request, response *restful.Re
 
 func (u NodeService) findNode(request *restful.Request, response *restful.Response) {
 	id := request.PathParameter("Node-id")
-	//usr := new(Node)
 	value, err := u.storageGet(id)
 	if err != nil {
 	    fmt.Println(err)
 	}else{
 	    fmt.Println(value)
 	}
-	
+
 	if len(value) == 0 {
 		response.WriteErrorString(http.StatusNotFound, "Node could not be found.")
 	} else {
@@ -72,12 +74,12 @@ func (u NodeService) findNode(request *restful.Request, response *restful.Respon
 }
 
 func (u *NodeService) updateNode(request *restful.Request, response *restful.Response) {
-	usr := new(Node)
-	err := request.ReadEntity(&usr)
+	nod := new(Node)
+	err := request.ReadEntity(&nod)
 	if err == nil {
-		u.storageUpdate(usr.Id,usr.String())
+		u.storageUpdate(nod.Id,nod.String())
 		fmt.Println("updateNode")
-		response.WriteEntity(usr)
+		response.WriteEntity(nod)
 	} else {
 		response.WriteError(http.StatusInternalServerError, err)
 	}
@@ -86,12 +88,15 @@ func (u *NodeService) updateNode(request *restful.Request, response *restful.Res
 
 func (u *NodeService) createNode(request *restful.Request, response *restful.Response) {
 
-	usr := new(Node)
-	err := request.ReadEntity(&usr)
+	nod := new(Node)
+	err := request.ReadEntity(&nod)
 	if err == nil {
-		
-		u.storageSet(usr.Id,usr.String())		
-		response.WriteHeaderAndEntity(http.StatusCreated, usr)
+		//u.storageSet(nod.Id,nod)
+		u.storageSet(nod.Id,nod.String())
+		//u.storageSet(nod.Id,{'Id':'123566666','Name':'liu'})
+
+		//u.storageSet(nod.Id,kk)
+		response.WriteHeaderAndEntity(http.StatusCreated, nod)
 	} else {
 		response.WriteError(http.StatusInternalServerError, err)
 	}
@@ -168,6 +173,5 @@ func (u *NodeService) storageDelete(key string ) error {
     	fmt.Println(resp)
     	return nil
     }
-    
 }
 
