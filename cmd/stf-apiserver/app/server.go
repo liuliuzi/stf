@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"net/http"
+	"time"
 	_ "net/http/pprof"
 	"github.com/liuliuzi/stf/cmd/stf-apiserver/app/options"
 	"github.com/liuliuzi/stf/pkg"
@@ -11,12 +12,15 @@ import (
 	"github.com/emicklei/go-restful/swagger"
 	"github.com/liuliuzi/stf/pkg/node"
 
+
 )
 
 
 var apiRuntime,_=pkg.NewApiRuntime()
 
 func Run(s *options.APIServer) error {
+
+
 	fmt.Println("start service in port ",s.Port)
 
 	apiRuntime.Etcdclient=pkg.Etcdclient("10.140.58.130",2379)
