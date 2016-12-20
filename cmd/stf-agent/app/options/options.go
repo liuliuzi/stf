@@ -16,7 +16,7 @@ type AgentServer struct {
 // NewAPIServer creates a new APIServer object with default parameters
 func NewAgentServer() *AgentServer {
 	s := AgentServer{
-		Port:                8088,
+		Port:                8090,
 		ServerIP:            "127.0.0.1",
 		LocalIP:             "127.0.0.2",
 	}

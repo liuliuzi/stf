@@ -5,7 +5,7 @@ import (
 	"os"
 	"runtime"
 	"github.com/spf13/pflag"
-	"github.com/golang/glog"
+	//"github.com/golang/glog"
 
 	"github.com/liuliuzi/stf/cmd/stf-agent/app"
 	"github.com/liuliuzi/stf/cmd/stf-agent/app/options"
@@ -21,7 +21,7 @@ func main() {
 	util.InitLogs()
 	defer util.FlushLogs()
 
-	glog.Info("valid agent app start")
+	//glog.Info("valid agent app start")
 
 	if err := app.Run(s); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)

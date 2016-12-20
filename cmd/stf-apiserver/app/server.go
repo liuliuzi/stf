@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 	"net/http"
-	"time"
+	//"time"
 	_ "net/http/pprof"
 	"github.com/liuliuzi/stf/cmd/stf-apiserver/app/options"
 	"github.com/liuliuzi/stf/pkg"
